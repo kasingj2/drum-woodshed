@@ -60,3 +60,73 @@ def test_is_processed_true_for_mp3(tmp_path):
     (lib / 'song.mp3').write_bytes(b'')
     source = tmp_path / 'song.flac'
     assert is_processed(source, lib) is True
+
+
+import subprocess
+from unittest.mock import patch, MagicMock
+from separate import get_device, run_demucs, process_file
+
+
+def test_get_device_returns_string():
+    device = get_device()
+    assert device in ('mps', 'cuda', 'cpu')
+
+
+def test_run_demucs_builds_correct_command(tmp_path):
+    source = tmp_path / 'song.mp3'
+    source.write_bytes(b'')
+
+    # Fake the no_drums output that demucs would create
+    fake_out = tmp_path / '.demucs_tmp' / 'htdemucs_ft' / 'song' / 'no_drums.wav'
+    fake_out.parent.mkdir(parents=True)
+    fake_out.write_bytes(b'audio')
+
+    with patch('separate.TMP_DIR', tmp_path / '.demucs_tmp'), \
+         patch('separate.subprocess.run') as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = run_demucs(source, model='htdemucs_ft', device='cpu', mp3=False)
+
+    cmd = mock_run.call_args[0][0]
+    assert '--two-stems=drums' in cmd
+    assert '-n' in cmd
+    assert 'htdemucs_ft' in cmd
+    assert '--device=cpu' in cmd
+    assert str(source) in cmd
+    assert result == fake_out
+
+
+def test_run_demucs_passes_mp3_flag(tmp_path):
+    source = tmp_path / 'song.mp3'
+    source.write_bytes(b'')
+
+    fake_out = tmp_path / '.demucs_tmp' / 'htdemucs_ft' / 'song' / 'no_drums.mp3'
+    fake_out.parent.mkdir(parents=True)
+    fake_out.write_bytes(b'audio')
+
+    with patch('separate.TMP_DIR', tmp_path / '.demucs_tmp'), \
+         patch('separate.subprocess.run') as mock_run:
+        mock_run.return_value = MagicMock(returncode=0)
+        result = run_demucs(source, model='htdemucs_ft', device='cpu', mp3=True)
+
+    cmd = mock_run.call_args[0][0]
+    assert '--mp3' in cmd
+    assert result == fake_out
+
+
+def test_process_file_moves_output_to_library(tmp_path):
+    source = tmp_path / 'input' / 'song.mp3'
+    source.parent.mkdir()
+    source.write_bytes(b'')
+    lib = tmp_path / 'library'
+    lib.mkdir()
+
+    fake_out = tmp_path / '.demucs_tmp' / 'htdemucs_ft' / 'song' / 'no_drums.wav'
+    fake_out.parent.mkdir(parents=True)
+    fake_out.write_bytes(b'drumless audio')
+
+    with patch('separate.TMP_DIR', tmp_path / '.demucs_tmp'), \
+         patch('separate.run_demucs', return_value=fake_out):
+        process_file(source, lib, model='htdemucs_ft', device='cpu', mp3=False)
+
+    assert (lib / 'song.wav').exists()
+    assert (lib / 'song.wav').read_bytes() == b'drumless audio'
