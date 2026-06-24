@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import re
 import socket
 import threading
 import uuid
@@ -24,7 +25,7 @@ def _import_worker(job_id: str, url: str) -> None:
         set_status('downloading', 'Getting track info...')
         with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
             info = ydl.extract_info(url, download=False)
-        title = clean_title(info['title'])
+        title = clean_title(info['title']) or re.sub(r'[<>:"/\\|?*]', '_', info['title'])[:60]
 
         set_status('downloading', f'Downloading: {title}')
         ydl_opts = {
@@ -95,7 +96,8 @@ def import_track():
     url = (data.get('url') or '').strip()
     if not url:
         return jsonify({'error': 'url required'}), 400
-    if not url.startswith(('https://www.youtube.com/', 'https://youtube.com/', 'https://youtu.be/')):
+    if not url.startswith(('https://www.youtube.com/', 'https://youtube.com/',
+                            'https://youtu.be/', 'https://music.youtube.com/')):
         return jsonify({'error': 'YouTube URLs only'}), 400
 
     job_id = str(uuid.uuid4())
