@@ -23,7 +23,7 @@ def _import_worker(job_id: str, url: str) -> None:
     try:
         INPUT_DIR.mkdir(exist_ok=True)
         set_status('downloading', 'Getting track info...')
-        with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
+        with yt_dlp.YoutubeDL({'quiet': True, 'noplaylist': True}) as ydl:
             info = ydl.extract_info(url, download=False)
         title = clean_title(info['title']) or re.sub(r'[<>:"/\\|?*]', '_', info['title'])[:60]
 
@@ -31,6 +31,7 @@ def _import_worker(job_id: str, url: str) -> None:
         ydl_opts = {
             'format': 'bestaudio/best',
             'outtmpl': str(INPUT_DIR / f'{title}.%(ext)s'),
+            'noplaylist': True,
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
