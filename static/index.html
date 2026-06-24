@@ -521,9 +521,15 @@
     ytImportBtn.disabled = busy;
   }
 
-  function setYtStatus(cls, html) {
+  function setYtStatus(cls, message, showSpinner = false) {
     ytStatus.className = cls;
-    ytStatus.innerHTML = html;
+    ytStatus.textContent = '';
+    if (showSpinner) {
+      const s = document.createElement('span');
+      s.className = 'spinner';
+      ytStatus.appendChild(s);
+    }
+    ytStatus.appendChild(document.createTextNode(message));
   }
 
   ytToggle.addEventListener('click', () => {
@@ -540,7 +546,7 @@
     if (!url) return;
 
     setYtBusy(true);
-    setYtStatus('downloading', '<span class="spinner"></span>Getting track info...');
+    setYtStatus('downloading', 'Getting track info...', true);
 
     try {
       const resp = await fetch('/api/import', {
@@ -570,14 +576,14 @@
       const { status, message } = await resp.json();
 
       if (status === 'downloading') {
-        setYtStatus('downloading', `<span class="spinner"></span>${message}`);
+        setYtStatus('downloading', message, true);
       } else if (status === 'processing') {
-        setYtStatus('processing', `<span class="spinner"></span>${message}`);
+        setYtStatus('processing', message, true);
       } else if (status === 'done') {
         clearInterval(ytPollInterval);
         ytPollInterval = null;
         ytCurrentJobId = null;
-        setYtStatus('done', `✓ ${message}`);
+        setYtStatus('done', '✓ ' + message);
         setYtBusy(false);
         const prevTracks = [...tracks];
         await loadLibrary();
@@ -591,7 +597,7 @@
         clearInterval(ytPollInterval);
         ytPollInterval = null;
         ytCurrentJobId = null;
-        setYtStatus('error', `Error: ${message}`);
+        setYtStatus('error', 'Error: ' + message);
         setYtBusy(false);
       }
     } catch {
