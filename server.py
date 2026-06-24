@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import socket
 from pathlib import Path
 from flask import Flask, jsonify, send_file
 
