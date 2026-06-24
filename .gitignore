@@ -1,0 +1,9 @@
+input/*
+!input/.gitkeep
+library/*
+!library/.gitkeep
+.demucs_tmp/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
