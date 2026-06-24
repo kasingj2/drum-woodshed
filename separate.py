@@ -12,15 +12,18 @@ TMP_DIR = Path('.demucs_tmp')
 
 
 def find_audio_files(input_dir: Path) -> list[Path]:
+    """Return all audio files in input_dir with supported extensions."""
     return [p for p in input_dir.iterdir() if p.suffix.lower() in AUDIO_EXTENSIONS]
 
 
 def output_path(source: Path, library_dir: Path, mp3: bool = False) -> Path:
+    """Return the library destination path for a source file."""
     ext = '.mp3' if mp3 else '.wav'
     return library_dir / (source.stem + ext)
 
 
 def is_processed(source: Path, library_dir: Path) -> bool:
+    """Return True if a .wav or .mp3 version of source already exists in library_dir."""
     stem = source.stem
     return any((library_dir / (stem + ext)).exists() for ext in ('.wav', '.mp3'))
 

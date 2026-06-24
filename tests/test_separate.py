@@ -1,6 +1,8 @@
 from pathlib import Path
+from unittest.mock import patch, MagicMock
+import subprocess
 import pytest
-from separate import find_audio_files, output_path, is_processed
+from separate import find_audio_files, output_path, is_processed, get_device, run_demucs, process_file
 
 
 def test_find_audio_files_returns_supported_formats(tmp_path):
@@ -60,11 +62,6 @@ def test_is_processed_true_for_mp3(tmp_path):
     (lib / 'song.mp3').write_bytes(b'')
     source = tmp_path / 'song.flac'
     assert is_processed(source, lib) is True
-
-
-import subprocess
-from unittest.mock import patch, MagicMock
-from separate import get_device, run_demucs, process_file
 
 
 def test_get_device_returns_string():
