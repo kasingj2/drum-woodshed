@@ -40,7 +40,7 @@ _NOISE_RE = re.compile(
     r'[\)\]]\s*',
     re.IGNORECASE,
 )
-_TRAILING_SEP_RE = re.compile(r'[\s\-|—]+$')
+_TRAILING_SEP_RE = re.compile(r'\s*[-|—]\s*$')
 
 
 def clean_title(title: str) -> str:
