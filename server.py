@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, abort
 
 LIBRARY_DIR = Path('library')
 AUDIO_EXTENSIONS = {'.wav', '.mp3', '.flac'}
@@ -26,4 +26,12 @@ def tracks():
 
 @app.route('/audio/<path:filename>')
 def audio(filename):
-    return send_file(LIBRARY_DIR / filename, conditional=True)
+    base = LIBRARY_DIR.resolve()
+    target = (base / filename).resolve()
+    try:
+        target.relative_to(base)
+    except ValueError:
+        abort(404)
+    if target.suffix.lower() not in AUDIO_EXTENSIONS or not target.is_file():
+        abort(404)
+    return send_file(target, conditional=True)
