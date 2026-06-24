@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import argparse
+import re
 from pathlib import Path
 
 AUDIO_EXTENSIONS = {'.mp3', '.wav', '.flac', '.m4a', '.aiff'}
@@ -26,6 +27,27 @@ def is_processed(source: Path, library_dir: Path) -> bool:
     """Return True if a .wav or .mp3 version of source already exists in library_dir."""
     stem = source.stem
     return any((library_dir / (stem + ext)).exists() for ext in ('.wav', '.mp3'))
+
+
+_NOISE_RE = re.compile(
+    r'\s*[\(\[]'
+    r'(?:official\s+(?:music\s+)?(?:video|audio|lyric\s+video|visualizer|mv)|'
+    r'lyrics?(?:\s+video)?|audio|hd|hq|4k|'
+    r'live(?:\s+(?:performance|version))?|'
+    r'music\s+video|mv|animated\s+video|visualizer|'
+    r'explicit|clean(?:\s+version)?|'
+    r'(?:\d{4}\s+)?remaster(?:ed)?(?:\s+\d{4})?)'
+    r'[\)\]]\s*',
+    re.IGNORECASE,
+)
+_TRAILING_SEP_RE = re.compile(r'[\s\-|—]+$')
+
+
+def clean_title(title: str) -> str:
+    """Strip YouTube noise from a video title, preserving artist/song name."""
+    title = _NOISE_RE.sub('', title)
+    title = _TRAILING_SEP_RE.sub('', title)
+    return ' '.join(title.split())
 
 
 def get_device() -> str:

@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 import subprocess
 import pytest
-from separate import find_audio_files, output_path, is_processed, get_device, run_demucs, process_file
+from separate import find_audio_files, output_path, is_processed, get_device, run_demucs, process_file, clean_title
 
 
 def test_find_audio_files_returns_supported_formats(tmp_path):
@@ -127,3 +127,23 @@ def test_process_file_moves_output_to_library(tmp_path):
 
     assert (lib / 'song.wav').exists()
     assert (lib / 'song.wav').read_bytes() == b'drumless audio'
+
+
+def test_clean_title_strips_official_video():
+    assert clean_title('Artist - Song (Official Video)') == 'Artist - Song'
+
+
+def test_clean_title_strips_brackets():
+    assert clean_title('Song Title [HD] [4K]') == 'Song Title'
+
+
+def test_clean_title_preserves_feat():
+    assert clean_title('Song (feat. Someone) (Official Audio)') == 'Song (feat. Someone)'
+
+
+def test_clean_title_strips_trailing_separator():
+    assert clean_title('Artist - Song (Official Video) - ') == 'Artist - Song'
+
+
+def test_clean_title_collapses_whitespace():
+    assert clean_title('Song   Title  (Lyrics)') == 'Song Title'
