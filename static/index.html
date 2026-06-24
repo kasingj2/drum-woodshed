@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Woodshed</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #111;
+      --surface: #1c1c1c;
+      --border: #2a2a2a;
+      --accent: #e05c2a;
+      --text: #e8e8e8;
+      --muted: #666;
+      --radius: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    #filter {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1rem;
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    #filter:focus { border-color: var(--accent); }
+
+    /* ── Track List ── */
+    #tracklist {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .track {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      gap: 12px;
+      min-height: 56px;
+    }
+
+    .track:active { background: var(--surface); }
+
+    .track.active {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      padding-left: 13px;
+    }
+
+    .track-name {
+      flex: 1;
+      font-size: 0.95rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .track.active .track-name { color: var(--accent); }
+
+    .track-playing-icon {
+      font-size: 0.7rem;
+      color: var(--accent);
+      min-width: 12px;
+    }
+
+    #empty {
+      display: none;
+      padding: 48px 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    /* ── Player Bar ── */
+    #player {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px 16px;
+    }
+
+    #now-playing {
+      font-size: 0.8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    #now-playing span {
+      color: var(--text);
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    /* ── Transport Row ── */
+    .transport {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    #play-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.1rem;
+      color: #fff;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    #play-btn:active { opacity: 0.8; }
+
+    #current-time, #duration {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      min-width: 36px;
+    }
+
+    #seek {
+      flex: 1;
+    }
+
+    /* ── Controls Row ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .vol-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex: 1;
+    }
+
+    #volume { flex: 1; }
+
+    #loop-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    #loop-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Range Inputs ── */
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Woodshed</h1>
+  <input type="search" id="filter" placeholder="Filter tracks..." autocomplete="off">
+</header>
+
+<main id="tracklist">
+  <div id="empty">
+    No tracks in library.<br>
+    Drop audio files in <code>input/</code> and run <code>python separate.py</code>
+  </div>
+</main>
+
+<footer id="player">
+  <div id="now-playing">Now playing: <span id="track-name-display">—</span></div>
+  <div class="transport">
+    <button id="play-btn" aria-label="Play/Pause">&#9654;</button>
+    <span id="current-time">0:00</span>
+    <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+    <span id="duration">0:00</span>
+  </div>
+  <div class="controls">
+    <label class="vol-label">
+      Vol
+      <input type="range" id="volume" min="0" max="1" step="0.02" value="1">
+    </label>
+    <button id="loop-btn">Loop: Off</button>
+  </div>
+</footer>
+
+<audio id="audio"></audio>
+
+<script>
+  const audio = document.getElementById('audio');
+  const playBtn = document.getElementById('play-btn');
+  const seekBar = document.getElementById('seek');
+  const volumeSlider = document.getElementById('volume');
+  const loopBtn = document.getElementById('loop-btn');
+  const filterInput = document.getElementById('filter');
+  const tracklistEl = document.getElementById('tracklist');
+  const emptyEl = document.getElementById('empty');
+  const currentTimeEl = document.getElementById('current-time');
+  const durationEl = document.getElementById('duration');
+  const trackNameDisplay = document.getElementById('track-name-display');
+
+  let tracks = [];
+  let currentIndex = -1;
+  let isSeeking = false;
+
+  function fmt(secs) {
+    if (!isFinite(secs)) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function displayName(filename) {
+    return filename.replace(/\.(wav|mp3|flac)$/i, '').replace(/_/g, ' ');
+  }
+
+  function renderTracks() {
+    const q = filterInput.value.toLowerCase();
+    const filtered = tracks.filter(t => displayName(t).toLowerCase().includes(q));
+
+    // Remove existing track rows
+    tracklistEl.querySelectorAll('.track').forEach(el => el.remove());
+    emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';
+
+    filtered.forEach((filename, i) => {
+      const globalIndex = tracks.indexOf(filename);
+      const div = document.createElement('div');
+      div.className = 'track' + (globalIndex === currentIndex ? ' active' : '');
+      div.dataset.index = globalIndex;
+      div.innerHTML = `
+        <span class="track-playing-icon">${globalIndex === currentIndex ? '&#9654;' : ''}</span>
+        <span class="track-name">${displayName(filename)}</span>
+      `;
+      div.addEventListener('click', () => loadTrack(globalIndex, true));
+      tracklistEl.appendChild(div);
+    });
+  }
+
+  function loadTrack(index, autoplay = false) {
+    currentIndex = index;
+    const filename = tracks[index];
+    audio.src = `/audio/${encodeURIComponent(filename)}`;
+    trackNameDisplay.textContent = displayName(filename);
+    if (autoplay) audio.play();
+    renderTracks();
+  }
+
+  function updatePlayBtn() {
+    playBtn.innerHTML = audio.paused ? '&#9654;' : '&#9646;&#9646;';
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!audio.src) return;
+    audio.paused ? audio.play() : audio.pause();
+  });
+
+  audio.addEventListener('play', updatePlayBtn);
+  audio.addEventListener('pause', updatePlayBtn);
+
+  audio.addEventListener('timeupdate', () => {
+    if (!isSeeking && isFinite(audio.duration)) {
+      seekBar.value = Math.round((audio.currentTime / audio.duration) * 1000);
+      currentTimeEl.textContent = fmt(audio.currentTime);
+    }
+  });
+
+  audio.addEventListener('durationchange', () => {
+    durationEl.textContent = fmt(audio.duration);
+  });
+
+  audio.addEventListener('ended', () => {
+    if (audio.loop) return;
+    const next = currentIndex + 1;
+    if (next < tracks.length) loadTrack(next, true);
+  });
+
+  seekBar.addEventListener('mousedown', () => { isSeeking = true; });
+  seekBar.addEventListener('touchstart', () => { isSeeking = true; }, { passive: true });
+
+  seekBar.addEventListener('input', () => {
+    if (isFinite(audio.duration)) {
+      currentTimeEl.textContent = fmt((seekBar.value / 1000) * audio.duration);
+    }
+  });
+
+  seekBar.addEventListener('change', () => {
+    if (isFinite(audio.duration)) {
+      audio.currentTime = (seekBar.value / 1000) * audio.duration;
+    }
+    isSeeking = false;
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    audio.volume = volumeSlider.value;
+  });
+
+  loopBtn.addEventListener('click', () => {
+    audio.loop = !audio.loop;
+    loopBtn.textContent = audio.loop ? 'Loop: On' : 'Loop: Off';
+    loopBtn.classList.toggle('active', audio.loop);
+  });
+
+  filterInput.addEventListener('input', renderTracks);
+
+  async function loadLibrary() {
+    const resp = await fetch('/api/tracks');
+    tracks = await resp.json();
+    renderTracks();
+  }
+
+  loadLibrary();
+</script>
+</body>
+</html>
