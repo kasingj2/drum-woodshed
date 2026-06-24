@@ -74,3 +74,13 @@ def test_audio_range_mid_file(client, tmp_path, monkeypatch):
     resp = client.get('/audio/song.wav', headers={'Range': 'bytes=100-199'})
     assert resp.status_code == 206
     assert resp.data == data[100:200]
+
+
+import re
+from server import get_lan_ip
+
+
+def test_get_lan_ip_returns_ip_string():
+    ip = get_lan_ip()
+    # Should be a dotted-quad IP like 192.168.1.5 or 127.0.0.1
+    assert re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ip)

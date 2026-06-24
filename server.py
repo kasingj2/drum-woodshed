@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import socket
 from pathlib import Path
 from flask import Flask, jsonify, send_file, abort
 
@@ -35,3 +36,18 @@ def audio(filename):
     if target.suffix.lower() not in AUDIO_EXTENSIONS or not target.is_file():
         abort(404)
     return send_file(target, conditional=True)
+
+
+def get_lan_ip() -> str:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('8.8.8.8', 80))
+            return s.getsockname()[0]
+    except Exception:
+        return '127.0.0.1'
+
+
+if __name__ == '__main__':
+    ip = get_lan_ip()
+    print(f'\n  Woodshed -> http://{ip}:8000\n')
+    app.run(host='0.0.0.0', port=8000, debug=False)
