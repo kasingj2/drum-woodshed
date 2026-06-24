@@ -1,5 +1,7 @@
+import re
 from pathlib import Path
 import server as srv
+from server import get_lan_ip
 from unittest.mock import MagicMock
 
 
@@ -114,10 +116,6 @@ def test_import_status_returns_job_state(client, monkeypatch):
     r = client.get('/api/import/status/test-job-id')
     assert r.status_code == 200
     assert r.get_json() == job
-
-
-import re
-from server import get_lan_ip
 
 
 def test_get_lan_ip_returns_ip_string():

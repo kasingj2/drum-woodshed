@@ -20,6 +20,7 @@ def _import_worker(job_id: str, url: str) -> None:
             _jobs[job_id] = {'status': status, 'message': message}
 
     try:
+        INPUT_DIR.mkdir(exist_ok=True)
         set_status('downloading', 'Getting track info...')
         with yt_dlp.YoutubeDL({'quiet': True}) as ydl:
             info = ydl.extract_info(url, download=False)
@@ -49,6 +50,8 @@ def _import_worker(job_id: str, url: str) -> None:
 
         set_status('processing', 'Removing drums...')
         process_file(source, LIBRARY_DIR, 'htdemucs_ft', get_device(), mp3=False)
+        if not is_processed(source, LIBRARY_DIR):
+            raise RuntimeError(f'Demucs processing failed for: {title}')
         set_status('done', f'Done: {title}')
     except Exception as e:
         set_status('error', str(e))
@@ -95,13 +98,11 @@ def import_track():
     if not url.startswith(('https://www.youtube.com/', 'https://youtube.com/', 'https://youtu.be/')):
         return jsonify({'error': 'YouTube URLs only'}), 400
 
+    job_id = str(uuid.uuid4())
     with _jobs_lock:
         for job in _jobs.values():
             if job['status'] in ('downloading', 'processing'):
                 return jsonify({'error': 'Already processing a track — please wait'}), 409
-
-    job_id = str(uuid.uuid4())
-    with _jobs_lock:
         _jobs[job_id] = {'status': 'downloading', 'message': 'Getting track info...'}
 
     thread = threading.Thread(target=_import_worker, args=(job_id, url), daemon=True)

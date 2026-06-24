@@ -147,3 +147,7 @@ def test_clean_title_strips_trailing_separator():
 
 def test_clean_title_collapses_whitespace():
     assert clean_title('Song   Title  (Lyrics)') == 'Song Title'
+
+
+def test_clean_title_sanitizes_path_unsafe_chars():
+    assert clean_title('AC/DC: Rock or Bust?') == 'AC_DC_ Rock or Bust_'

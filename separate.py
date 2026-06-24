@@ -47,6 +47,7 @@ def clean_title(title: str) -> str:
     """Strip YouTube noise from a video title, preserving artist/song name."""
     title = _NOISE_RE.sub('', title)
     title = _TRAILING_SEP_RE.sub('', title)
+    title = re.sub(r'[<>:"/\\|?*]', '_', title)
     return ' '.join(title.split())
 
 
