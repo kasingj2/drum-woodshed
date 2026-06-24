@@ -57,3 +57,20 @@ def test_audio_valid_file_returns_200(client, tmp_path, monkeypatch):
     (tmp_path / 'song.wav').write_bytes(b'RIFF' + b'\x00' * 100)
     resp = client.get('/audio/song.wav')
     assert resp.status_code == 200
+
+
+def test_audio_range_request_returns_206(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(srv, 'LIBRARY_DIR', tmp_path)
+    (tmp_path / 'song.wav').write_bytes(b'A' * 1000)
+    resp = client.get('/audio/song.wav', headers={'Range': 'bytes=0-99'})
+    assert resp.status_code == 206
+    assert len(resp.data) == 100
+
+
+def test_audio_range_mid_file(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(srv, 'LIBRARY_DIR', tmp_path)
+    data = bytes(range(256)) * 4  # 1024 bytes, predictable content
+    (tmp_path / 'song.wav').write_bytes(data)
+    resp = client.get('/audio/song.wav', headers={'Range': 'bytes=100-199'})
+    assert resp.status_code == 206
+    assert resp.data == data[100:200]
