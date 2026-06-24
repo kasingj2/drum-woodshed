@@ -586,6 +586,7 @@
         setYtStatus('done', '✓ ' + message);
         setYtBusy(false);
         const prevTracks = [...tracks];
+        filterInput.value = '';
         await loadLibrary();
         highlightNewTracks(prevTracks);
         setTimeout(() => {
