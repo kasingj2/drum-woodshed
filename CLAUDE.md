@@ -16,7 +16,7 @@ pip install demucs flask pytest
 python3 separate.py          # strip drums from input/ -> library/
 python3 separate.py --help   # show all flags
 python3 server.py            # start player at http://<lan-ip>:8000
-python3 -m pytest tests/ -v  # run 28 tests
+python3 -m pytest tests/ -v  # run 35 tests
 ```
 
 ## File map
@@ -24,7 +24,7 @@ python3 -m pytest tests/ -v  # run 28 tests
 | File | Responsibility |
 |------|---------------|
 | `separate.py` | Batch pipeline: find audio in `input/`, run Demucs `--two-stems=drums`, move `no_drums.wav` to `library/` |
-| `server.py` | Flask app: `GET /` (UI), `GET /api/tracks` (JSON list), `GET /audio/<f>` (streaming with range support + path traversal protection) |
+| `server.py` | Flask app: `GET /` (UI), `GET /api/tracks` (JSON list), `GET /audio/<f>` (streaming with range support + path traversal protection), `POST /api/import` (start YouTube import job), `GET /api/import/status/<id>` (poll job status) |
 | `static/index.html` | Single self-contained player — all CSS/JS inline, no build step |
 | `tests/test_separate.py` | 17 unit tests for separate.py pure functions and subprocess logic |
 | `tests/test_server.py` | 11 tests for Flask routes (tracks, audio, security, range) |

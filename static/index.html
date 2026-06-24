@@ -238,6 +238,100 @@
       height: 4px;
       border-radius: 2px;
     }
+
+    /* ── YouTube Import Panel ── */
+    #yt-toggle {
+      background: none;
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--accent);
+      font-size: 0.8rem;
+      padding: 7px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+      flex-shrink: 0;
+    }
+
+    #yt-toggle:disabled {
+      border-color: var(--muted);
+      color: var(--muted);
+      cursor: default;
+    }
+
+    #yt-panel {
+      display: none;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #161616;
+      flex-shrink: 0;
+    }
+
+    .yt-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #yt-url {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    #yt-url:disabled { border-color: var(--border); color: var(--muted); }
+    #yt-url::placeholder { color: var(--muted); }
+
+    #yt-import-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 0.9rem;
+      padding: 8px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #yt-import-btn:disabled { background: var(--muted); cursor: default; }
+
+    #yt-status {
+      font-size: 0.8rem;
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+
+    #yt-status.downloading { color: var(--muted); }
+    #yt-status.processing  { color: var(--accent); }
+    #yt-status.done        { color: #5aad5a; }
+    #yt-status.error       { color: #cc4444; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 1.5px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .track.new-track {
+      border-left: 3px solid #5aad5a;
+      padding-left: 13px;
+    }
+
+    .track.new-track .track-name { color: #5aad5a; }
   </style>
 </head>
 <body>
@@ -245,7 +339,16 @@
 <header>
   <h1>Woodshed</h1>
   <input type="search" id="filter" placeholder="Filter tracks..." autocomplete="off">
+  <button id="yt-toggle">+ YouTube</button>
 </header>
+
+<div id="yt-panel">
+  <div class="yt-row">
+    <input type="url" id="yt-url" placeholder="https://youtube.com/watch?v=...">
+    <button id="yt-import-btn">Import</button>
+  </div>
+  <div id="yt-status"></div>
+</div>
 
 <main id="tracklist">
   <div id="empty">
@@ -393,6 +496,119 @@
     const resp = await fetch('/api/tracks');
     tracks = await resp.json();
     renderTracks();
+  }
+
+  // ── YouTube import ──
+  const ytToggle = document.getElementById('yt-toggle');
+  const ytPanel = document.getElementById('yt-panel');
+  const ytUrl = document.getElementById('yt-url');
+  const ytImportBtn = document.getElementById('yt-import-btn');
+  const ytStatus = document.getElementById('yt-status');
+
+  let ytPanelOpen = false;
+  let ytPollInterval = null;
+  let ytCurrentJobId = null;
+
+  function setYtPanelOpen(open) {
+    ytPanelOpen = open;
+    ytPanel.style.display = open ? 'block' : 'none';
+    ytToggle.textContent = open ? '✕ Close' : '+ YouTube';
+  }
+
+  function setYtBusy(busy) {
+    ytToggle.disabled = busy;
+    ytUrl.disabled = busy;
+    ytImportBtn.disabled = busy;
+  }
+
+  function setYtStatus(cls, html) {
+    ytStatus.className = cls;
+    ytStatus.innerHTML = html;
+  }
+
+  ytToggle.addEventListener('click', () => {
+    if (ytToggle.disabled) return;
+    setYtPanelOpen(!ytPanelOpen);
+    if (!ytPanelOpen) {
+      ytUrl.value = '';
+      setYtStatus('', '');
+    }
+  });
+
+  ytImportBtn.addEventListener('click', async () => {
+    const url = ytUrl.value.trim();
+    if (!url) return;
+
+    setYtBusy(true);
+    setYtStatus('downloading', '<span class="spinner"></span>Getting track info...');
+
+    try {
+      const resp = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setYtStatus('error', data.error || 'Import failed');
+        setYtBusy(false);
+        return;
+      }
+      ytCurrentJobId = data.job_id;
+      ytPollInterval = setInterval(pollYtStatus, 2000);
+    } catch {
+      setYtStatus('error', 'Network error');
+      setYtBusy(false);
+    }
+  });
+
+  async function pollYtStatus() {
+    if (!ytCurrentJobId) return;
+    try {
+      const resp = await fetch(`/api/import/status/${ytCurrentJobId}`);
+      if (!resp.ok) return;
+      const { status, message } = await resp.json();
+
+      if (status === 'downloading') {
+        setYtStatus('downloading', `<span class="spinner"></span>${message}`);
+      } else if (status === 'processing') {
+        setYtStatus('processing', `<span class="spinner"></span>${message}`);
+      } else if (status === 'done') {
+        clearInterval(ytPollInterval);
+        ytPollInterval = null;
+        ytCurrentJobId = null;
+        setYtStatus('done', `✓ ${message}`);
+        setYtBusy(false);
+        const prevTracks = [...tracks];
+        await loadLibrary();
+        highlightNewTracks(prevTracks);
+        setTimeout(() => {
+          setYtPanelOpen(false);
+          ytUrl.value = '';
+          setYtStatus('', '');
+        }, 1500);
+      } else if (status === 'error') {
+        clearInterval(ytPollInterval);
+        ytPollInterval = null;
+        ytCurrentJobId = null;
+        setYtStatus('error', `Error: ${message}`);
+        setYtBusy(false);
+      }
+    } catch {
+      // network blip — keep polling
+    }
+  }
+
+  function highlightNewTracks(prevTracks) {
+    const prevSet = new Set(prevTracks);
+    document.querySelectorAll('.track').forEach(el => {
+      const idx = parseInt(el.dataset.index, 10);
+      const filename = tracks[idx];
+      if (filename && !prevSet.has(filename)) {
+        el.classList.add('new-track');
+        setTimeout(() => el.classList.remove('new-track'), 2000);
+      }
+    });
   }
 
   loadLibrary();
