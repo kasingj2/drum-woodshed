@@ -2,3 +2,4 @@ demucs
 flask
 pytest
 soundfile
+yt-dlp

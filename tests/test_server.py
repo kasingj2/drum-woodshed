@@ -1,5 +1,6 @@
 from pathlib import Path
 import server as srv
+from unittest.mock import MagicMock
 
 
 def test_tracks_empty_library(client, tmp_path, monkeypatch):
@@ -74,6 +75,45 @@ def test_audio_range_mid_file(client, tmp_path, monkeypatch):
     resp = client.get('/audio/song.wav', headers={'Range': 'bytes=100-199'})
     assert resp.status_code == 206
     assert resp.data == data[100:200]
+
+
+def test_import_missing_url_returns_400(client):
+    r = client.post('/api/import', json={})
+    assert r.status_code == 400
+
+
+def test_import_non_youtube_url_returns_400(client):
+    r = client.post('/api/import', json={'url': 'https://vimeo.com/123456'})
+    assert r.status_code == 400
+
+
+def test_import_valid_url_returns_202_with_job_id(client, monkeypatch):
+    monkeypatch.setattr(srv, '_jobs', {})
+    monkeypatch.setattr('server.threading.Thread', lambda *a, **kw: MagicMock())
+    r = client.post('/api/import', json={'url': 'https://youtube.com/watch?v=abc123'})
+    assert r.status_code == 202
+    assert 'job_id' in r.get_json()
+
+
+def test_import_busy_returns_409(client, monkeypatch):
+    busy_job = {'status': 'downloading', 'message': 'Getting track info...'}
+    monkeypatch.setattr(srv, '_jobs', {'existing-id': busy_job})
+    r = client.post('/api/import', json={'url': 'https://youtube.com/watch?v=abc123'})
+    assert r.status_code == 409
+
+
+def test_import_status_unknown_id_returns_404(client, monkeypatch):
+    monkeypatch.setattr(srv, '_jobs', {})
+    r = client.get('/api/import/status/no-such-id')
+    assert r.status_code == 404
+
+
+def test_import_status_returns_job_state(client, monkeypatch):
+    job = {'status': 'downloading', 'message': 'Getting track info...'}
+    monkeypatch.setattr(srv, '_jobs', {'test-job-id': job})
+    r = client.get('/api/import/status/test-job-id')
+    assert r.status_code == 200
+    assert r.get_json() == job
 
 
 import re
