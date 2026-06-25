@@ -1,11 +1,15 @@
 #!/usr/bin/env python3.12
+import logging
 import re
 import socket
 import threading
+import traceback
 import uuid
 from pathlib import Path
 from flask import Flask, jsonify, send_file, abort, request
 from separate import clean_title, process_file, is_processed, get_device
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 LIBRARY_DIR = Path('library')
 INPUT_DIR = Path('input')
@@ -55,7 +59,9 @@ def _import_worker(job_id: str, url: str) -> None:
         if not is_processed(source, LIBRARY_DIR):
             raise RuntimeError(f'Demucs processing failed for: {title}')
         set_status('done', f'Done: {title}')
+        logging.info('Import complete: %s', title)
     except Exception as e:
+        logging.error('Import failed: %s\n%s', e, traceback.format_exc())
         set_status('error', str(e))
 
 

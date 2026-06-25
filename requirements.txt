@@ -2,4 +2,5 @@ demucs
 flask
 pytest
 soundfile
+torchcodec
 yt-dlp
