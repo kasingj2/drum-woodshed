@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.12
 import re
 import socket
 import threading
@@ -133,5 +133,5 @@ def get_lan_ip() -> str:
 
 if __name__ == '__main__':
     ip = get_lan_ip()
-    print(f'\n  Woodshed -> http://{ip}:8000\n')
-    app.run(host='0.0.0.0', port=8000, debug=False)
+    print(f'\n  Woodshed -> http://{ip}:8080\n')
+    app.run(host='0.0.0.0', port=8080, debug=False)

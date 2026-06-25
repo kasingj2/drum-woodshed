@@ -11,12 +11,14 @@ Self-hosted drumless practice library. Two parts: a batch pipeline that strips d
 ## Running things
 
 ```bash
-pip install demucs flask pytest
+# First-time setup (requires Python 3.12 via Homebrew)
+python3.12 -m venv .venv
+.venv/bin/pip install demucs flask pytest soundfile yt-dlp
 
-python3 separate.py          # strip drums from input/ -> library/
-python3 separate.py --help   # show all flags
-python3 server.py            # start player at http://<lan-ip>:8000
-python3 -m pytest tests/ -v  # run 35 tests
+.venv/bin/python separate.py          # strip drums from input/ -> library/
+.venv/bin/python separate.py --help   # show all flags
+.venv/bin/python server.py            # start player at http://<lan-ip>:8080
+.venv/bin/python -m pytest tests/ -v  # run 35 tests
 ```
 
 ## File map
