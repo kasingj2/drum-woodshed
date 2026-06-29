@@ -12,12 +12,17 @@ Self-hosted drumless practice library. Two parts: a batch pipeline that strips d
 
 ```bash
 # First-time setup (requires Python 3.12 via Homebrew)
+brew install python@3.12
 python3.12 -m venv .venv
-.venv/bin/pip install demucs flask pytest soundfile yt-dlp
+.venv/bin/pip install -r requirements.txt
 
+# One-time port forwarding setup (run once; persists across reboots)
+sudo ./setup-port-forward.sh
+
+# Daily use
+.venv/bin/python server.py            # start player at http://woodshed.local
 .venv/bin/python separate.py          # strip drums from input/ -> library/
 .venv/bin/python separate.py --help   # show all flags
-.venv/bin/python server.py            # start player at http://<lan-ip>:8080
 .venv/bin/python -m pytest tests/ -v  # run 35 tests
 ```
 
