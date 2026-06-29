@@ -4,3 +4,4 @@ pytest
 soundfile
 torchcodec
 yt-dlp
+zeroconf

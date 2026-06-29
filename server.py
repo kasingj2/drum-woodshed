@@ -137,7 +137,25 @@ def get_lan_ip() -> str:
         return '127.0.0.1'
 
 
+def _advertise_mdns(ip: str, port: int) -> None:
+    import atexit
+    import socket as _socket
+    from zeroconf import Zeroconf, ServiceInfo
+    info = ServiceInfo(
+        '_http._tcp.local.',
+        'Woodshed._http._tcp.local.',
+        addresses=[_socket.inet_aton(ip)],
+        port=port,
+        properties={'path': '/'},
+        server='woodshed.local.',
+    )
+    zc = Zeroconf()
+    zc.register_service(info)
+    atexit.register(lambda: (zc.unregister_service(info), zc.close()))
+
+
 if __name__ == '__main__':
     ip = get_lan_ip()
-    print(f'\n  Woodshed -> http://{ip}:8080\n')
+    _advertise_mdns(ip, 8080)
+    print(f'\n  Woodshed -> http://woodshed.local  ({ip}:8080)\n')
     app.run(host='0.0.0.0', port=8080, debug=False)
